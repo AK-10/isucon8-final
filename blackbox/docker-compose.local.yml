@@ -7,9 +7,13 @@ services:
     ports:
       - "5515:5515"
       - "5516:5516"
-    links:
-      - isubank
-      - logger
+    # 各コンテナのドメインはservice名となる
+    # ex) isubank -> http://isubank
+    # かつコンテナ間はcomposeでは同じネットワークにいる事になる
+    # なのでnginxでproxy_passを設定することでlinksはいらなくなる
+    # links:
+    #   - isubank
+    #   - logger
     command:
       - "/usr/local/openresty/bin/openresty"
       - "-c"

@@ -19,8 +19,11 @@ var (
 	appep        = flag.String("appep", "https://localhost.isucon8.flying-chair.net", "app endpoint")
 	bankep       = flag.String("bankep", "https://compose.isucon8.flying-chair.net:5515", "isubank endpoint")
 	logep        = flag.String("logep", "https://compose.isucon8.flying-chair.net:5516", "isulog endpoint")
-	internalbank = flag.String("internalbank", "https://localhost.isucon8.flying-chair.net:5515", "isubank endpoint (for internal)")
-	internallog  = flag.String("internallog", "https://localhost.isucon8.flying-chair.net:5516", "isulog endpoint (for internal)")
+	// internalbank = flag.String("internalbank", "https://localhost.isucon8.flying-chair.net:5515", "isubank endpoint (for internal)")
+	// internallog  = flag.String("internallog", "https://localhost.isucon8.flying-chair.net:5516", "isulog endpoint (for internal)")
+
+    internalbank = flag.String("internalbank", "http://127.0.0.1:5515", "isubank endpoint (for internal)")
+	internallog  = flag.String("internallog", "http://127.0.0.1:5516", "isulog endpoint (for internal)")
 	jobid        = flag.String("jobid", "", "portal jobid")
 	logoutput    = flag.String("log", "", "output log path (default stderr)")
 	result       = flag.String("result", "", "result json path (default stdout)")

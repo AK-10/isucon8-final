@@ -38,3 +38,7 @@ services:
 
 volumes:
   mysql:
+
+# networks:
+#   shared-network:
+#     external: true
