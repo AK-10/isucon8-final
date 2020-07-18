@@ -109,7 +109,7 @@ docker-compose -f webapp/docker-compose.yml -f webapp/docker-compose.php.yml up 
 
 ### webappの言語実装を切り替える場合
 
-一度downしてからbuildしてupし直します 
+一度downしてからbuildしてupし直します
 
 例: go→perl
 ```
@@ -130,7 +130,6 @@ docker-compose -f webapp/docker-compose.yml -f webapp/docker-compose.perl.yml up
 docker-compose -f blackbox/docker-compose.local.yml up [-d]
 ```
 
-
 ## bench
 
 ### 準備
@@ -141,7 +140,6 @@ make init
 make deps
 make build
 ```
-
 
 ### 実行
 
@@ -162,3 +160,25 @@ make build
 ```
 
 ※ *.flying-chair.net 等のドメインの維持は保証しません
+
+## 手元でベンチを動かす人へ
+
+goで動かす
+blackboxとwebappさえ動けば良いです
+
+```bash
+# ディレクトリはプロジェクトルート
+$ docker-compose -f blackbox/docker-compose.local.yml up [-d]
+$ docker-compose -f docker-compose.yml -f docker-compose.mockservice.yml -f docker-compose.go.yml up [-d]
+
+$ cd bench
+# ベンチのビルド
+$ make init
+$ make deps
+$ make build
+
+# ベンチマークを回す
+# linuxでは動作しません，ifconfigと同等の動作を行うコマンドに置き換えると動くようになります
+$ make mac_start
+```
+
