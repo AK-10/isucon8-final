@@ -178,7 +178,9 @@ $ make deps
 $ make build
 
 # ベンチマークを回す
-# linuxでは動作しません，ifconfigと同等の動作を行うコマンドに置き換えると動くようになります
+# for mac
 $ make mac_start
+# for linux
+$ make linux_start
 ```
 
