@@ -1,5 +1,6 @@
 DIR = $(shell pwd)
-HOST_IP = $(shell ifconfig en0 | grep "inet " | awk -v 'RS=" "' '{print $$2}')
+MAC_HOST_IP := $(shell ifconfig en0 | grep "inet " | awk -v 'RS=" "' '{print $$2}')
+LINUX_HOST_IP := $(shell ip addr show en0 | grep "inet " | awk -v 'RS=" "' '{print $$2}' | sed 's/\/.*//g' )
 
 all: build
 
@@ -37,7 +38,16 @@ build-isucointest:
 mac_start:
 	./bin/bench \
         -appep=http://localhost \
-        -bankep=http://${HOST_IP}:5515 \
-        -logep=http://${HOST_IP}:5516 \
-        -internalbank=http://${HOST_IP}:5515 \
-        -internallog=http://${HOST_IP}:5516
+        -bankep=http://${MAC_HOST_IP}:5515 \
+        -logep=http://${MAC_HOST_IP}:5516 \
+        -internalbank=http://${MAC_HOST_IP}:5515 \
+        -internallog=http://${MAC_HOST_IP}:5516
+
+linux_start:
+	./bin/bench \
+        -appep=http://localhost \
+        -bankep=http://${LINUX_HOST_IP}:5515 \
+        -logep=http://${LINUX_HOST_IP}:5516 \
+        -internalbank=http://${LINUX_HOST_IP}:5515 \
+        -internallog=http://${LINUX_HOST_IP}:5516
+
