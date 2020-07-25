@@ -28,14 +28,6 @@ type Order struct {
 	Trade     *Trade     `json:"trade,omitempty"`
 }
 
-func GetOrdersByUserID(d QueryExecutor, userID int64) ([]*Order, error) {
-	return scanOrders(d.Query("SELECT * FROM orders WHERE user_id = ? AND (closed_at IS NULL OR trade_id IS NOT NULL) ORDER BY created_at ASC", userID))
-}
-
-func GetOrdersByUserIDAndLastTradeId(d QueryExecutor, userID int64, tradeID int64) ([]*Order, error) {
-	return scanOrders(d.Query(`SELECT * FROM orders WHERE user_id = ? AND trade_id IS NOT NULL AND trade_id > ? ORDER BY created_at ASC`, userID, tradeID))
-}
-
 func getOpenOrderByID(tx *sql.Tx, id int64) (*Order, error) {
 	order, err := getOrderByIDWithLock(tx, id)
 	if err != nil {
@@ -69,7 +61,9 @@ func GetHighestBuyOrder(d QueryExecutor) (*Order, error) {
 
 func GetOrdersByUserIDWithRelation(d QueryExecutor, userID int64) ([]*Order, error) {
 	query := `
-		SELECT o.*, u.*, t.*
+		(SELECT
+			o.id, o.type, o.user_id, o.amount, o.price, o.closed_at, o.trade_id, o.created_at AS oca,
+			u.*, t.*
 		FROM
 			orders AS o
 		INNER JOIN
@@ -83,13 +77,33 @@ func GetOrdersByUserIDWithRelation(d QueryExecutor, userID int64) ([]*Order, err
 		WHERE
 			o.user_id = ?
 		AND
-			(o.closed_at IS NULL OR o.trade_id IS NOT NULL)
+			o.closed_at IS NULL
+		)
+		UNION
+		(SELECT
+			o.id, o.type, o.user_id, o.amount, o.price, o.closed_at, o.trade_id, o.created_at AS oca,
+			u.*, t.*
+		FROM
+			orders AS o
+		INNER JOIN
+			user AS u
+		ON
+			o.user_id = u.id
+		LEFT OUTER JOIN
+			trade AS t
+		ON
+			o.trade_id = t.id
+		WHERE
+			o.user_id = ?
+		AND
+			o.trade_id IS NOT NULL
+		)
 		ORDER BY
-			o.created_at
+			oca
 		ASC
 	`
 
-	rows, err := d.Query(query, userID)
+	rows, err := d.Query(query, userID, userID)
 	if err != nil {
 		return nil, err
 	}
