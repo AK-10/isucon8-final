@@ -42,6 +42,14 @@
   version = "v1.1"
 
 [[projects]]
+  digest = "1:4c0404dc03d974acd5fcd8b8d3ce687b13bd169db032b89275e8b9d77b98ce8c"
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  pruneopts = ""
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
+
+[[projects]]
   digest = "1:7365acd48986e205ccb8652cc746f09c8b7876030d53710ea6ef7d0bd0dcd7ca"
   name = "github.com/pkg/errors"
   packages = ["."]
@@ -76,6 +84,7 @@
     "github.com/gorilla/context",
     "github.com/gorilla/sessions",
     "github.com/julienschmidt/httprouter",
+    "github.com/patrickmn/go-cache",
     "github.com/pkg/errors",
     "golang.org/x/crypto/bcrypt",
   ]

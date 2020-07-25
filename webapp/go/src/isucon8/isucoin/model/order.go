@@ -2,15 +2,24 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"isucon8/isubank"
 	"time"
 
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
 const (
 	OrderTypeBuy  = "buy"
 	OrderTypeSell = "sell"
+
+	LowestSellOrderKey = "lowest_sell_order"
+	HighestBuyOrderKey = "highest_buy_order"
+)
+
+var (
+	CacheClient = cache.New(1*time.Hour, 2*time.Hour)
 )
 
 //go:generate scanner
@@ -25,6 +34,11 @@ type Order struct {
 	CreatedAt time.Time  `json:"created_at"`
 	User      *User      `json:"user,omitempty"`
 	Trade     *Trade     `json:"trade,omitempty"`
+}
+
+func (o Order) ToJSON() []byte {
+	marshaled, _ := json.Marshal(&o)
+	return marshaled
 }
 
 func GetOrdersByUserID(d QueryExecutor, userID int64) ([]*Order, error) {
@@ -117,6 +131,33 @@ func AddOrder(tx *sql.Tx, ot string, userID, amount, price int64) (*Order, error
 	if err != nil {
 		return nil, errors.Wrap(err, "insert order failed")
 	}
+
+	order := Order{
+		UserID: user.ID,
+		Type:   ot,
+		Price:  price,
+		Amount: amount,
+	}
+
+	// cacheのlowestまたはhighestを更新する
+	if order.Type == "sell" {
+		// set lowest sell order
+		lowestOrder, err := GetLowestSellOrderFromCache()
+		if err == nil {
+			if order.Price < lowestOrder.Price {
+				SetLowestSellOrderToCache(order)
+			}
+		}
+	} else {
+		// buy
+		highestOrder, err := GetHighestBuyOrderFromCache()
+		if err == nil {
+			if order.Price > highestOrder.Price {
+				SetLowestSellOrderToCache(order)
+			}
+		}
+	}
+
 	id, err := res.LastInsertId()
 	if err != nil {
 		return nil, errors.Wrap(err, "get order_id failed")
@@ -159,4 +200,38 @@ func cancelOrder(d QueryExecutor, order *Order, reason string) error {
 		"reason":   reason,
 	})
 	return nil
+}
+
+func SetLowestSellOrderToCache(order Order) {
+	CacheClient.Set(LowestSellOrderKey, order.ToJSON(), cache.DefaultExpiration)
+}
+
+func GetLowestSellOrderFromCache() (*Order, error) {
+	var order Order
+	iface, ok := CacheClient.Get(LowestSellOrderKey)
+	if !ok {
+		return nil, errors.New("failed get order from cache")
+	}
+
+	bytes, _ := iface.([]byte)
+	err := json.Unmarshal(bytes, &order)
+
+	return &order, err
+}
+
+func SetHighestBuyOrderToCache(order Order) {
+	CacheClient.Set(HighestBuyOrderKey, order.ToJSON(), cache.DefaultExpiration)
+}
+
+func GetHighestBuyOrderFromCache() (*Order, error) {
+	var order Order
+	iface, ok := CacheClient.Get(HighestBuyOrderKey)
+	if !ok {
+		return nil, errors.New("failed get order from cache")
+	}
+	bytes, _ := iface.([]byte)
+
+	err := json.Unmarshal(bytes, &order)
+
+	return &order, err
 }
