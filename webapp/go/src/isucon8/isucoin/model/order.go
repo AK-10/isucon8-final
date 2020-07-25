@@ -5,6 +5,7 @@ import (
 	"isucon8/isubank"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 )
 
@@ -64,6 +65,85 @@ func GetLowestSellOrder(d QueryExecutor) (*Order, error) {
 
 func GetHighestBuyOrder(d QueryExecutor) (*Order, error) {
 	return scanOrder(d.Query("SELECT * FROM orders WHERE type = ? AND closed_at IS NULL ORDER BY price DESC, created_at ASC LIMIT 1", OrderTypeBuy))
+}
+
+func GetOrdersByUserIDWithRelation(d QueryExecutor, userID int64) ([]*Order, error) {
+	query := `
+		SELECT o.*, u.*, t.*
+		FROM
+			orders AS o
+		INNER JOIN
+			user AS u
+		ON
+			o.user_id = u.id
+		LEFT OUTER JOIN
+			trade AS t
+		ON
+			o.trade_id = t.id
+		WHERE
+			o.user_id = ?
+		AND
+			(o.closed_at IS NULL OR o.trade_id IS NOT NULL)
+		ORDER BY
+			o.created_at
+		ASC
+	`
+
+	rows, err := d.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err = rows.Close()
+	}()
+
+	orders := []*Order{}
+
+	for rows.Next() {
+		var o Order
+		var u User
+		var t Trade
+
+		var closedAt mysql.NullTime
+		var tradeID sql.NullInt64
+
+		var tID sql.NullInt64
+		var tAmount sql.NullInt64
+		var tPrice sql.NullInt64
+		var tCreatedAt mysql.NullTime
+
+		if err = rows.Scan(
+			&o.ID, &o.Type, &o.UserID, &o.Amount, &o.Price, &closedAt, &tradeID, &o.CreatedAt,
+			&u.ID, &u.BankID, &u.Name, &u.Password, &u.CreatedAt,
+			&tID, &tAmount, &tPrice, &tCreatedAt); err != nil {
+			return nil, err
+		}
+
+		if closedAt.Valid {
+			o.ClosedAt = &closedAt.Time
+		}
+		if tradeID.Valid {
+			o.TradeID = tradeID.Int64
+		}
+
+		if tID.Valid && tAmount.Valid && tPrice.Valid && tCreatedAt.Valid {
+			t.ID = tID.Int64
+			t.Amount = tAmount.Int64
+			t.Price = tPrice.Int64
+			t.CreatedAt = tCreatedAt.Time
+
+			o.Trade = &t
+		} else {
+			o.Trade = nil
+		}
+
+		o.User = &u
+
+		orders = append(orders, &o)
+	}
+	err = rows.Err()
+
+	return orders, err
 }
 
 func GetOrdersByUserIDAndLastTradeIdWithRelation(d QueryExecutor, userID int64, tradeID int64) ([]*Order, error) {
