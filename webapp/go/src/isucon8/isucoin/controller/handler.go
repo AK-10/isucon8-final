@@ -156,17 +156,12 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	res["cursor"] = latestTrade.ID
 	user, _ := h.userByRequest(r)
 	if user != nil {
-		orders, err := model.GetOrdersByUserIDAndLastTradeId(h.db, user.ID, lastTradeID)
+		orders, err := model.GetOrdersByUserIDAndLastTradeIdWithRelation(h.db, user.ID, lastTradeID)
 		if err != nil {
 			h.handleError(w, err, 500)
 			return
 		}
-		for _, order := range orders {
-			if err = model.FetchOrderRelation(h.db, order); err != nil {
-				h.handleError(w, err, 500)
-				return
-			}
-		}
+
 		res["traded_orders"] = orders
 	}
 
@@ -272,12 +267,15 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request, _ httprouter
 		h.handleError(w, err, 500)
 		return
 	}
+	// ===== N+1 =====
 	for _, order := range orders {
 		if err = model.FetchOrderRelation(h.db, order); err != nil {
 			h.handleError(w, err, 500)
 			return
 		}
 	}
+	// ===== N+1 =====
+
 	h.handleSuccess(w, orders)
 }
 
