@@ -57,6 +57,27 @@ func (h *Handler) Initialize(w http.ResponseWriter, r *http.Request, _ httproute
 	if err != nil {
 		h.handleError(w, err, 500)
 	} else {
+
+		highest, err := model.GetHighestBuyOrder(h.db)
+		if err != nil {
+			highest = &model.Order{
+				Price: 0,
+				Type:  "buy",
+			}
+		}
+
+		model.SetHighestBuyOrderToCache(*highest)
+
+		lowest, err := model.GetLowestSellOrder(h.db)
+		if err != nil {
+			lowest = &model.Order{
+				Price: 1000000000000,
+				Type:  "sell",
+			}
+		}
+
+		model.SetLowestSellOrderToCache(*lowest)
+
 		h.handleSuccess(w, struct{}{})
 	}
 }
@@ -238,6 +259,7 @@ func (h *Handler) AddOrders(w http.ResponseWriter, r *http.Request, _ httprouter
 		order, err = model.AddOrder(tx, r.FormValue("type"), user.ID, amount, price)
 		return
 	})
+
 	switch {
 	case err == model.ErrParameterInvalid || err == model.ErrCreditInsufficient:
 		h.handleError(w, err, 400)

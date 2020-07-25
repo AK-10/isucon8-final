@@ -62,7 +62,10 @@ func HasTradeChanceByOrder(d QueryExecutor, orderID int64) (bool, error) {
 		return false, err
 	}
 
-	lowest, err := GetLowestSellOrder(d)
+	lowest, err := GetLowestSellOrderFromCache()
+	if err != nil {
+		lowest, err = GetLowestSellOrder(d)
+	}
 	switch {
 	case err == sql.ErrNoRows:
 		return false, nil
@@ -70,7 +73,10 @@ func HasTradeChanceByOrder(d QueryExecutor, orderID int64) (bool, error) {
 		return false, errors.Wrap(err, "GetLowestSellOrder")
 	}
 
-	highest, err := GetHighestBuyOrder(d)
+	highest, err := GetHighestBuyOrderFromCache()
+	if err != nil {
+		highest, err = GetHighestBuyOrder(d)
+	}
 	switch {
 	case err == sql.ErrNoRows:
 		return false, nil
