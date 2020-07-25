@@ -262,19 +262,13 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request, _ httprouter
 		h.handleError(w, err, 401)
 		return
 	}
-	orders, err := model.GetOrdersByUserID(h.db, user.ID)
+
+	orders, err := model.GetOrdersByUserIDWithRelation(h.db, user.ID)
+
 	if err != nil {
 		h.handleError(w, err, 500)
 		return
 	}
-	// ===== N+1 =====
-	for _, order := range orders {
-		if err = model.FetchOrderRelation(h.db, order); err != nil {
-			h.handleError(w, err, 500)
-			return
-		}
-	}
-	// ===== N+1 =====
 
 	h.handleSuccess(w, orders)
 }
