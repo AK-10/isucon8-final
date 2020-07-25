@@ -66,6 +66,59 @@ func GetHighestBuyOrder(d QueryExecutor) (*Order, error) {
 	return scanOrder(d.Query("SELECT * FROM orders WHERE type = ? AND closed_at IS NULL ORDER BY price DESC, created_at ASC LIMIT 1", OrderTypeBuy))
 }
 
+func GetOrdersByUserIDAndLastTradeIdWithRelation(d QueryExecutor, userID int64, tradeID int64) ([]*Order, error) {
+	query := `
+		SELECT o.*, u.*, t.*
+		FROM
+			orders AS o
+		INNER JOIN
+			user AS u
+		ON
+			o.user_id = u.id
+		INNER JOIN
+			trade AS t
+		ON
+			o.trade_id = t.id
+		WHERE
+			o.user_id = ?
+		AND
+			trade_id > ?
+		ORDER BY
+			o.created_at
+		ASC
+	`
+
+	rows, err := d.Query(query, userID, tradeID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err = rows.Close()
+	}()
+
+	orders := []*Order{}
+
+	for rows.Next() {
+		var o Order
+		var u User
+		var t Trade
+		if err = rows.Scan(
+			&o.ID, &o.Type, &o.UserID, &o.Amount, &o.Price, &o.ClosedAt, &o.TradeID, &o.CreatedAt,
+			&u.ID, &u.BankID, &u.Name, &u.Password, &u.CreatedAt,
+			&t.ID, &t.Amount, &t.Price, &t.CreatedAt); err != nil {
+			return nil, err
+		}
+
+		o.User = &u
+		o.Trade = &t
+
+		orders = append(orders, &o)
+	}
+	err = rows.Err()
+
+	return orders, err
+}
+
 func FetchOrderRelation(d QueryExecutor, order *Order) error {
 	var err error
 	order.User, err = GetUserByID(d, order.UserID)

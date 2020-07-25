@@ -35,6 +35,8 @@ services:
     # development only
     ports:
       - "13306:3306"
+    security_opt:
+      - seccomp:unconfined
 
 volumes:
   mysql:

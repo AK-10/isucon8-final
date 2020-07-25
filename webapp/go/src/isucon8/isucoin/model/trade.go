@@ -201,6 +201,7 @@ func tryTrade(tx *sql.Tx, orderID int64) error {
 		return ErrNoOrderForTrade
 	}
 
+	// ===== N+1 =====
 	for _, to := range targetOrders {
 		to, err = getOpenOrderByID(tx, to.ID)
 		if err != nil {
@@ -226,6 +227,8 @@ func tryTrade(tx *sql.Tx, orderID int64) error {
 			break
 		}
 	}
+	// ===== N+1 =====
+
 	if restAmount > 0 {
 		return ErrNoOrderForTrade
 	}
