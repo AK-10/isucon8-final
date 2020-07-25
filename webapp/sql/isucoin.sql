@@ -25,6 +25,7 @@ CREATE TABLE orders (
     closed_at DATETIME(6),
     trade_id BIGINT,
     created_at DATETIME(6) NOT NULL,
+    INDEX trade_id_created_at_idx(trade_id, created_at),
     INDEX type_closed_at_idx(type, closed_at),
     INDEX user_id_idx(user_id),
     INDEX user_id_trade_id_idx(user_id, trade_id),
